@@ -109,10 +109,10 @@ static uint8_t conv2d(const char* p) {
 }
 
 // A convenient constructor for using a date and time string
-DateTime::DateTime (const char* date, const char* time) {
+DateTime::DateTime (const char *date, const char *time) {
     // sample input: date = "04.05.2020", time = "12:34:56"
-    d = conf2d(date);
-    m = conf2d(date+3);
+    d = conv2d(date);
+    m = conv2d(date+3);
     yOff = conv2d(date + 8);
 
     hh = conv2d(time);
