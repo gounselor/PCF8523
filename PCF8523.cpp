@@ -234,7 +234,7 @@ uint8_t PCF8523::isrunning(void) {
 
   Wire.requestFrom(PCF8523_ADDRESS, 1);
   uint8_t ss = Wire.read();
-  ss = ss & 32;
+  ss = ss & (1 << 5);
   return !(ss>>5);
 }
 
