@@ -25,31 +25,9 @@
 #include <Wire.h>
 #include "pcf8523.h"
 
-#ifdef __AVR__
- #include <avr/pgmspace.h>
- #define WIRE Wire
-#else
- #define PROGMEM
- #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
- #define WIRE Wire1
-#endif
-
-
 #define SECONDS_PER_DAY 86400L
 
 #define SECONDS_FROM_1970_TO_2000 946684800
-
-#if (ARDUINO >= 100)
- #include <Arduino.h> // capital A so it is error prone on case-sensitive filesystems
- // Macro to deal with the difference in I2C write functions from old and new Arduino versions.
- #define _I2C_WRITE write
- #define _I2C_READ  read
-#else
- #include <WProgram.h>
- #define _I2C_WRITE send
- #define _I2C_READ  receive
-#endif
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // utility code, some of this could be exposed in the DateTime API if needed
@@ -250,12 +228,12 @@ uint8_t PCF8523::begin(void) {
 // Example: bool a = PCF8523.isrunning();
 // Returns 1 if RTC is running and 0 it's not 
 uint8_t PCF8523::isrunning(void) {
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(0);
-  WIRE.endTransmission();
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(0);
+  Wire.endTransmission();
 
-  WIRE.requestFrom(PCF8523_ADDRESS, 1);
-  uint8_t ss = WIRE._I2C_READ();
+  Wire.requestFrom(PCF8523_ADDRESS, 1);
+  uint8_t ss = Wire.read();
   ss = ss & 32;
   return !(ss>>5);
 }
@@ -263,17 +241,17 @@ uint8_t PCF8523::isrunning(void) {
 // Example: PCF8523.adjust (DateTime(2014, 8, 14, 1, 49, 0))
 // Sets RTC time to 2014/14/8 1:49 a.m.
 void PCF8523::adjust(const DateTime& dt) {
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(0x03);
-  WIRE._I2C_WRITE(bin2bcd(dt.second()));
-  WIRE._I2C_WRITE(bin2bcd(dt.minute()));
-  WIRE._I2C_WRITE(bin2bcd(dt.hour()));
-  WIRE._I2C_WRITE(bin2bcd(dt.day()));
-  WIRE._I2C_WRITE(bin2bcd(0));
-  WIRE._I2C_WRITE(bin2bcd(dt.month()));
-  WIRE._I2C_WRITE(bin2bcd(dt.year() - 2000));
-  WIRE._I2C_WRITE(0);
-  WIRE.endTransmission();
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(0x03);
+  Wire.write(bin2bcd(dt.second()));
+  Wire.write(bin2bcd(dt.minute()));
+  Wire.write(bin2bcd(dt.hour()));
+  Wire.write(bin2bcd(dt.day()));
+  Wire.write(bin2bcd(0));
+  Wire.write(bin2bcd(dt.month()));
+  Wire.write(bin2bcd(dt.year() - 2000));
+  Wire.write(0);
+  Wire.endTransmission();
 }
 
 // Example: DateTime now = PCF8523.now();
@@ -285,18 +263,18 @@ void PCF8523::adjust(const DateTime& dt) {
 // minute = now.minute()
 // second = now.second()
 DateTime PCF8523::now() {
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(3);   
-  WIRE.endTransmission();
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(3);   
+  Wire.endTransmission();
 
-  WIRE.requestFrom(PCF8523_ADDRESS, 7);
-  uint8_t ss = bcd2bin(WIRE._I2C_READ() & 0x7F);
-  uint8_t mm = bcd2bin(WIRE._I2C_READ());
-  uint8_t hh = bcd2bin(WIRE._I2C_READ());
-  uint8_t d = bcd2bin(WIRE._I2C_READ());
-  WIRE._I2C_READ();
-  uint8_t m = bcd2bin(WIRE._I2C_READ());
-  uint16_t y = bcd2bin(WIRE._I2C_READ()) + 2000;
+  Wire.requestFrom(PCF8523_ADDRESS, 7);
+  uint8_t ss = bcd2bin(Wire.read() & 0x7F);
+  uint8_t mm = bcd2bin(Wire.read());
+  uint8_t hh = bcd2bin(Wire.read());
+  uint8_t d = bcd2bin(Wire.read());
+  Wire.read();
+  uint8_t m = bcd2bin(Wire.read());
+  uint16_t y = bcd2bin(Wire.read()) + 2000;
   
   return DateTime (y, m, d, hh, mm, ss);
 }
@@ -308,13 +286,13 @@ DateTime PCF8523::now() {
 //      ..... buf[size-1] = &address + size
 void PCF8523::read_reg(uint8_t* buf, uint8_t size, uint8_t address) {
   int addrByte = address;
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(addrByte);
-  WIRE.endTransmission();
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(addrByte);
+  Wire.endTransmission();
   
-  WIRE.requestFrom((uint8_t) PCF8523_ADDRESS, size);
+  Wire.requestFrom((uint8_t) PCF8523_ADDRESS, size);
   for (uint8_t pos = 0; pos < size; ++pos) {
-    buf[pos] = WIRE._I2C_READ();
+    buf[pos] = Wire.read();
   }
 }
 
@@ -324,12 +302,12 @@ void PCF8523::read_reg(uint8_t* buf, uint8_t size, uint8_t address) {
 //      ..... buf[size-1] => &address + size
 void PCF8523::write_reg(uint8_t address, uint8_t* buf, uint8_t size) {
   int addrByte = address;
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(addrByte);
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(addrByte);
   for (uint8_t pos = 0; pos < size; ++pos) {
-    WIRE._I2C_WRITE(buf[pos]);
+    Wire.write(buf[pos]);
   }
-  WIRE.endTransmission();
+  Wire.endTransmission();
 }
 
 // Example: val = PCF8523.read_reg(0x08);
@@ -350,35 +328,35 @@ void PCF8523::write_reg(uint8_t address, uint8_t data) {
 // Example: PCF8523.set_alarm(10,5,45)
 // Set alarm at day = 5, 5:45 a.m.
 void PCF8523::set_alarm(uint8_t day_alarm, uint8_t hour_alarm,uint8_t minute_alarm ) {
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(0x0A);
-  WIRE._I2C_WRITE(bin2bcd(minute_alarm));
-  WIRE._I2C_WRITE(bin2bcd(hour_alarm));
-  WIRE._I2C_WRITE(bin2bcd(day_alarm));
-  WIRE._I2C_WRITE(0);
-  WIRE.endTransmission();
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(0x0A);
+  Wire.write(bin2bcd(minute_alarm));
+  Wire.write(bin2bcd(hour_alarm));
+  Wire.write(bin2bcd(day_alarm));
+  Wire.write(0);
+  Wire.endTransmission();
 }
 
 void PCF8523::set_alarm(uint8_t hour_alarm,uint8_t minute_alarm ) {
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(0x0A);
-  WIRE._I2C_WRITE(bin2bcd(minute_alarm));
-  WIRE._I2C_WRITE(bin2bcd(hour_alarm));
-  WIRE._I2C_WRITE(bin2bcd(0));
-  WIRE._I2C_WRITE(0);
-  WIRE.endTransmission();
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(0x0A);
+  Wire.write(bin2bcd(minute_alarm));
+  Wire.write(bin2bcd(hour_alarm));
+  Wire.write(bin2bcd(0));
+  Wire.write(0);
+  Wire.endTransmission();
 }
 
 
 // Example: PCF8523.get_alarm(a);
 // Returns a[0] = alarm minutes, a[1] = alarm hour, a[2] = alarm day
 void PCF8523::get_alarm(uint8_t* buf) {
-  WIRE.beginTransmission(PCF8523_ADDRESS);
-  WIRE._I2C_WRITE(0x0A);
-  WIRE.endTransmission();
-  WIRE.requestFrom((uint8_t) PCF8523_ADDRESS, (uint8_t)3);
+  Wire.beginTransmission(PCF8523_ADDRESS);
+  Wire.write(0x0A);
+  Wire.endTransmission();
+  Wire.requestFrom((uint8_t) PCF8523_ADDRESS, (uint8_t)3);
   for (uint8_t pos = 0; pos < 3; ++pos) {
-    buf[pos] = bcd2bin((WIRE._I2C_READ() & 0x7F));
+    buf[pos] = bcd2bin((Wire.read() & 0x7F));
   }
   
 }
