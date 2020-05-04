@@ -108,24 +108,13 @@ static uint8_t conv2d(const char* p) {
     return 10 * v + *++p - '0';
 }
 
-// A convenient constructor for using "the compiler's time":
-//   DateTime now (__DATE__, __TIME__);
-// NOTE: using F() would further reduce the RAM footprint, see below.
+// A convenient constructor for using a date and time string
 DateTime::DateTime (const char* date, const char* time) {
-    // sample input: date = "Dec 26 2009", time = "12:34:56"
-    yOff = conv2d(date + 9);
-    // Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec 
-    switch (date[0]) {
-        case 'J': m = date[1] == 'a' ? 1 : m = date[2] == 'n' ? 6 : 7; break;
-        case 'F': m = 2; break;
-        case 'A': m = date[2] == 'r' ? 4 : 8; break;
-        case 'M': m = date[2] == 'r' ? 3 : 5; break;
-        case 'S': m = 9; break;
-        case 'O': m = 10; break;
-        case 'N': m = 11; break;
-        case 'D': m = 12; break;
-    }
-    d = conv2d(date + 4);
+    // sample input: date = "04.05.2020", time = "12:34:56"
+    d = conf2d(date);
+    m = conf2d(date+3);
+    yOff = conv2d(date + 8);
+
     hh = conv2d(time);
     mm = conv2d(time + 3);
     ss = conv2d(time + 6);
